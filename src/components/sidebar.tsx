@@ -24,6 +24,7 @@ import {
 
 import type { AppRole } from "@/lib/api/rbac";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SidebarProps {
   role: AppRole;
@@ -35,6 +36,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
   const router = useRouter();
   const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -90,13 +92,37 @@ export default function Sidebar({ role, userName }: SidebarProps) {
           </h1>
         </div>
 
-        <div className="flex items-center gap-3 border-b border-border px-6 py-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-red/30 bg-brand-red/10 text-brand-red">
-            <User size={20} />
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-red/30 bg-brand-red/10 text-brand-red">
+              <User size={20} />
+            </div>
+            <div className="overflow-hidden">
+              <p className="truncate text-sm font-semibold text-white">{userName}</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-brand-red">{role}</p>
+            </div>
           </div>
-          <div className="overflow-hidden">
-            <p className="truncate text-sm font-semibold text-white">{userName}</p>
-            <p className="text-xs font-medium uppercase tracking-wider text-brand-red">{role}</p>
+          <div className="flex items-center gap-0.5 rounded-md border border-border/40 bg-black/40 p-0.5">
+            <button
+              onClick={() => setLanguage("th")}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-extrabold tracking-wider transition-all duration-200 ${
+                language === "th"
+                  ? "bg-brand-red text-white shadow-md shadow-red-950/20"
+                  : "text-muted hover:text-white"
+              }`}
+            >
+              TH
+            </button>
+            <button
+              onClick={() => setLanguage("en")}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-extrabold tracking-wider transition-all duration-200 ${
+                language === "en"
+                  ? "bg-brand-red text-white shadow-md shadow-red-950/20"
+                  : "text-muted hover:text-white"
+              }`}
+            >
+              EN
+            </button>
           </div>
         </div>
 
@@ -117,7 +143,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
                 onClick={() => setIsOpen(false)}
               >
                 <Icon size={18} className={isActive ? "text-white" : "text-muted group-hover:text-white"} />
-                {item.name}
+                {t(item.name)}
               </Link>
             );
           })}
@@ -129,7 +155,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
             className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-muted transition-all duration-200 hover:bg-brand-red/10 hover:text-white"
           >
             <LogOut size={18} />
-            Logout Shift
+            {t("Logout Shift")}
           </button>
         </div>
       </div>
