@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Loader2, MessageSquareCheck, MessageSquareX, Search, UserPlus } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Customer = {
   id: string;
@@ -25,6 +26,7 @@ type CustomersResponse = {
 };
 
 export default function OwnerCustomersPage() {
+  const { t } = useLanguage();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,18 +161,21 @@ export default function OwnerCustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white">
-            CUSTOMER <span className="text-brand-red">HQ DIRECTORY</span>
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white animate-fade-in">
+            {t("CUSTOMER HQ DIRECTORY").split(" ")[0]}{" "}
+            <span className="text-brand-red">
+              {t("CUSTOMER HQ DIRECTORY").split(" ").slice(1).join(" ")}
+            </span>
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Global management of customers and LINE OA sync across all branches
+            {t("Global management of customers and LINE OA sync across all branches")}
           </p>
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-brand-red px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-red-hover"
+          className="inline-flex items-center gap-2 rounded-md bg-brand-red px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-red-hover transition-all duration-200 active:scale-95"
         >
-          <UserPlus size={16} /> Register Customer
+          <UserPlus size={16} /> {t("Register Customer")}
         </button>
       </div>
 
@@ -188,7 +193,7 @@ export default function OwnerCustomersPage() {
           <input
             type="text"
             className="brand-input w-full pl-10"
-            placeholder="Search by name, phone, email..."
+            placeholder={t("Search by name, phone, email...")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -199,7 +204,7 @@ export default function OwnerCustomersPage() {
             value={filterBranchId}
             onChange={(event) => setFilterBranchId(event.target.value)}
           >
-            <option value="">All Branches</option>
+            <option value="">{t("All Branches")}</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -213,18 +218,18 @@ export default function OwnerCustomersPage() {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="mr-2 animate-spin text-brand-red" />
-            <span className="text-muted">Loading directory records...</span>
+            <span className="text-muted">{t("Loading directory records...")}</span>
           </div>
         ) : (
           <table className="min-w-full divide-y divide-border text-left">
             <thead className="bg-background/40">
               <tr>
-                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">Name</th>
-                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">Branch</th>
-                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">Phone</th>
-                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">Email</th>
-                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">LINE OA Account</th>
-                <th className="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-muted">Actions</th>
+                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">{t("Name")}</th>
+                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">{t("Branch")}</th>
+                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">{t("Phone")}</th>
+                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">{t("Email")}</th>
+                <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-muted">{t("LINE OA Account")}</th>
+                <th className="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-muted">{t("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-card/10">
@@ -244,11 +249,11 @@ export default function OwnerCustomersPage() {
                     <td className="whitespace-nowrap px-6 py-4 text-sm">
                       {customer.line_user_id ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                          <MessageSquareCheck size={14} /> Synced
+                          <MessageSquareCheck size={14} /> {t("Synced")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-muted">
-                          <MessageSquareX size={14} /> Unlinked
+                          <MessageSquareX size={14} /> {t("Unlinked")}
                         </span>
                       )}
                     </td>
@@ -257,13 +262,13 @@ export default function OwnerCustomersPage() {
                         href={`/owner/customers/${customer.id}`}
                         className="mr-4 text-brand-red hover:text-brand-red-hover"
                       >
-                        View Detail
+                        {t("View Detail")}
                       </Link>
                       <Link
                         href={`/owner/customers/${customer.id}/timeline`}
                         className="text-muted hover:text-white"
                       >
-                        Timeline
+                        {t("Timeline")}
                       </Link>
                     </td>
                   </tr>
@@ -271,7 +276,7 @@ export default function OwnerCustomersPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-sm text-muted">
-                    No customer accounts found matching search filters.
+                    {t("No customer accounts found matching search filters.")}
                   </td>
                 </tr>
               )}
@@ -281,21 +286,21 @@ export default function OwnerCustomersPage() {
       </div>
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md glass-card bg-card p-6">
-            <h2 className="mb-4 font-display text-xl font-bold text-white">
-              REGISTER CUSTOMER ACCOUNT
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md glass-card bg-card p-6 scale-up">
+            <h2 className="mb-4 font-display text-xl font-bold text-white tracking-tight">
+              {t("REGISTER CUSTOMER ACCOUNT")}
             </h2>
             <form onSubmit={handleCreateCustomer} className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase text-muted">Target Branch</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-muted">{t("Target Branch")}</label>
                 <select
                   required
                   className="brand-input w-full"
                   value={selectedBranchId}
                   onChange={(event) => setSelectedBranchId(event.target.value)}
                 >
-                  <option value="">Select a Branch...</option>
+                  <option value="">{t("Select a Branch...")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -305,46 +310,46 @@ export default function OwnerCustomersPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase text-muted">Full Name</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-muted">{t("Full Name")}</label>
                 <input
                   type="text"
                   required
                   className="brand-input w-full"
-                  placeholder="e.g. Apinan Speedster"
+                  placeholder={t("e.g. Apinan Speedster")}
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase text-muted">Phone Number</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-muted">{t("Phone Number")}</label>
                 <input
                   type="text"
                   required
                   className="brand-input w-full"
-                  placeholder="e.g. +6681-555-0199"
+                  placeholder={t("e.g. +6681-555-0199")}
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase text-muted">Email Address</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-muted">{t("Email Address")}</label>
                 <input
                   type="email"
                   className="brand-input w-full"
-                  placeholder="e.g. apinan@gmail.com"
+                  placeholder={t("e.g. apinan@gmail.com")}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase text-muted">LINE User ID (Optional)</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-muted">{t("LINE User ID (Optional)")}</label>
                 <input
                   type="text"
                   className="brand-input w-full"
-                  placeholder="e.g. U1234567890abcdef..."
+                  placeholder={t("e.g. U1234567890abcdef...")}
                   value={lineId}
                   onChange={(event) => setLineId(event.target.value)}
                 />
@@ -354,17 +359,17 @@ export default function OwnerCustomersPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-white hover:bg-white/5"
+                  className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-white hover:bg-white/5 transition-all duration-200"
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-md bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-brand-red-hover disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-brand-red-hover disabled:opacity-50 transition-all duration-200 active:scale-95"
                 >
                   {submitting ? <Loader2 className="animate-spin" size={14} /> : null}
-                  Register Account
+                  {t("Register Account")}
                 </button>
               </div>
             </form>
