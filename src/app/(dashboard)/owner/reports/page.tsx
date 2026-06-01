@@ -45,7 +45,7 @@ export default async function OwnerReportsPage() {
     supabase.from("payments").select("*").order("payment_date", { ascending: false }),
     supabase.from("invoices").select("id, customer_id, branch_id").is("deleted_at", null),
     supabase.from("jobs").select("id, status, branch_id").is("deleted_at", null),
-    supabase.from("customers").select("id, full_name").is("deleted_at", null),
+    supabase.from("customers").select("id, full_name"),
     supabase.from("branches").select("id, name").is("deleted_at", null),
   ]);
 
