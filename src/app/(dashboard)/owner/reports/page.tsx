@@ -1,7 +1,7 @@
 import { BarChart3, TrendingUp, DollarSign, ClipboardCheck, Users, ShieldCheck, Wallet } from "lucide-react";
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const revalidate = 0;
 
@@ -32,7 +32,7 @@ type CustomerRow = {
 };
 
 export default async function OwnerReportsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch payments, invoices, jobs, customers, and branches in parallel for supreme loading speed
   const [

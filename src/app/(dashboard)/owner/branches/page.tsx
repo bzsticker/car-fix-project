@@ -1,7 +1,7 @@
 import { Building2, MapPin, Phone, Users, ClipboardList, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const revalidate = 0;
 
@@ -18,7 +18,7 @@ type JobRow = {
 };
 
 export default async function OwnerBranchesPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch branches, profiles (staff), and jobs in parallel for multi-branch performance aggregation
   const [

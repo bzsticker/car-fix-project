@@ -1,7 +1,7 @@
 import { Package, AlertTriangle, ShieldAlert, BadgeDollarSign, Grid } from "lucide-react";
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const revalidate = 0;
 
@@ -22,7 +22,7 @@ type InventoryRow = {
 };
 
 export default async function OwnerStockPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch inventories, products, and branches separately to maximize query robustness
   const [

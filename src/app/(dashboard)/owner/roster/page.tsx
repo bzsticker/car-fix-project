@@ -1,7 +1,7 @@
 import { Clock, Users, Calendar, MapPin, Camera, FileText, Users2 } from "lucide-react";
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const revalidate = 0;
 
@@ -31,7 +31,7 @@ function firstRelation<T>(value: T | T[] | null): T | null {
 }
 
 export default async function OwnerRosterPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [
     { data: logs, error: logsError },

@@ -1,6 +1,6 @@
 import { AlertTriangle, Clipboard, DollarSign, Users } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 type PaymentRow = {
   amount: number | string;
@@ -23,7 +23,7 @@ function firstRelation<T>(value: T | T[] | null): T | null {
 export const revalidate = 0;
 
 export default async function OwnerPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const [{ count: branchCount }, { count: jobsCount }, { data: payments }, { data: activeAttendance }] = await Promise.all([
     supabase.from("branches").select("*", { count: "exact", head: true }),
     supabase.from("jobs").select("*", { count: "exact", head: true }).is("deleted_at", null),
