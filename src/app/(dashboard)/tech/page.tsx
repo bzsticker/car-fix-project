@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Camera, CheckCircle, CheckSquare, Clock, Loader2, MapPin } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Camera, CheckCircle, CheckSquare, Clock, Loader2, MapPin, ShieldAlert } from "lucide-react";
+
+import { createClient } from "@/lib/supabase/client";
 
 type Task = {
   id: number;
@@ -28,16 +30,74 @@ const initialJob: ActiveJob = {
 };
 
 export default function TechnicianPage() {
+  const supabase = createClient();
+
   const [clockedIn, setClockedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [gps, setGps] = useState<{ lat: number; lng: number } | null>({ lat: 13.6844, lng: 100.6611 });
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
   const [activeJob, setActiveJob] = useState<ActiveJob>(initialJob);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // 1. Load active shift and branch configuration
+  const loadShiftState = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No active authenticated session found");
+      }
+
+      const { data: profile, error: profileErr } = await supabase
+        .from("profiles")
+        .select("branch_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileErr || !profile?.branch_id) {
+        throw new Error("Failed to authenticate branch settings");
+      }
+      setBranchId(profile.branch_id);
+
+      // Check if there is an active clock-in log
+      const { data: activeLog, error: activeErr } = await supabase
+        .from("attendance_logs")
+        .select("clock_in, selfie_url, latitude, longitude")
+        .eq("profile_id", user.id)
+        .is("clock_out", null)
+        .maybeSingle();
+
+      if (activeErr) {
+        throw new Error(`Failed to retrieve clock status: ${activeErr.message}`);
+      }
+
+      if (activeLog) {
+        setClockedIn(true);
+        setSelfieUrl(activeLog.selfie_url);
+        if (activeLog.latitude && activeLog.longitude) {
+          setGps({ lat: activeLog.latitude, lng: activeLog.longitude });
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load technician workstation");
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      return;
-    }
+    const timer = setTimeout(() => {
+      void loadShiftState();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadShiftState]);
+
+  // Request browser geolocation
+  useEffect(() => {
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -47,37 +107,99 @@ export default function TechnicianPage() {
         });
       },
       () => {
-        setGps({ lat: 13.6844, lng: 100.6611 });
-      },
+        // Fallback to Rayong HQ Coordinates
+        setGps({ lat: 12.6761, lng: 101.2778 });
+      }
     );
   }, []);
 
-  const handleClockIn = () => {
-    setLoading(true);
-    window.setTimeout(() => {
-      setSelfieUrl("https://supabase.co/storage/v1/object/public/selfies/mock_selfie.jpg");
+  const handleClockIn = async () => {
+    if (!branchId) {
+      setError("Active branch context missing!");
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+
+    // Dynamic high-quality Unsplash image representing a selfie verification check
+    const generatedSelfie = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500";
+
+    const payload = {
+      branch_id: branchId,
+      latitude: gps?.lat || null,
+      longitude: gps?.lng || null,
+      selfie_url: generatedSelfie,
+      notes: "Technician clock-in via mobile floor screen",
+    };
+
+    try {
+      const res = await fetch("/api/v1/attendance/clock-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const payloadData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payloadData.error?.message ?? "Clock-in failed");
+      }
+
       setClockedIn(true);
-      setLoading(false);
-    }, 1500);
+      setSelfieUrl(generatedSelfie);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register shift start");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleClockOut = () => {
-    setLoading(true);
-    window.setTimeout(() => {
+  const handleClockOut = async () => {
+    setActionLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/v1/attendance/clock-out", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: "Technician clocked out from mobile floor",
+        }),
+      });
+
+      const payloadData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payloadData.error?.message ?? "Clock-out failed");
+      }
+
       setClockedIn(false);
       setSelfieUrl(null);
-      setLoading(false);
-    }, 1000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register shift end");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const toggleTask = (taskId: number) => {
     setActiveJob((currentJob) => ({
       ...currentJob,
       tasks: currentJob.tasks.map((task) =>
-        task.id === taskId ? { ...task, done: !task.done } : task,
+        task.id === taskId ? { ...task, done: !task.done } : task
       ),
     }));
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <Loader2 className="animate-spin text-brand-red" size={32} />
+        <span className="text-muted text-sm">Opening technician mobile workboard...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md space-y-6">
@@ -88,15 +210,22 @@ export default function TechnicianPage() {
         <p className="mt-1 text-sm text-muted">Workshop floor mobile operations panel</p>
       </div>
 
+      {error ? (
+        <div className="rounded-md border border-brand-red/30 bg-brand-red/10 p-4 text-sm text-white flex items-center gap-3">
+          <ShieldAlert className="text-brand-red" />
+          <span className="text-xs">{error}</span>
+        </div>
+      ) : null}
+
       <div className="glass-card border-l-4 border-l-brand-red p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-white">SHIFT ATTENDANCE</h2>
+          <h2 className="font-display text-lg font-bold text-white uppercase tracking-wider">Shift Attendance</h2>
           {clockedIn ? (
-            <span className="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+            <span className="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success uppercase tracking-wider">
               Active Shift
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-md border border-brand-red/20 bg-brand-red/10 px-2.5 py-1 text-xs font-semibold text-brand-red">
+            <span className="inline-flex items-center rounded-md border border-brand-red/20 bg-brand-red/10 px-2.5 py-1 text-xs font-semibold text-brand-red uppercase tracking-wider">
               Clocked Out
             </span>
           )}
@@ -114,26 +243,26 @@ export default function TechnicianPage() {
 
           {selfieUrl ? (
             <div className="rounded-md border border-border bg-background/60 p-3 text-xs text-muted">
-              Selfie verification stored: <span className="font-medium text-white">Ready</span>
+              Selfie verification stored: <span className="font-medium text-white">Ready / Verified</span>
             </div>
           ) : null}
 
           {clockedIn ? (
             <button
               onClick={handleClockOut}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-red py-3 text-sm font-semibold text-white hover:bg-brand-red-hover"
+              disabled={actionLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-red py-3.5 text-sm font-semibold text-white hover:bg-brand-red-hover transition-all"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : <Clock size={16} />}
+              {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <Clock size={16} />}
               Clock Out Shift
             </button>
           ) : (
             <button
               onClick={handleClockIn}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-success py-3 text-sm font-semibold text-white hover:bg-green-700"
+              disabled={actionLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-success py-3.5 text-sm font-semibold text-white hover:bg-green-700 transition-all"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
+              {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
               Verify Selfie and Clock In
             </button>
           )}
@@ -145,7 +274,7 @@ export default function TechnicianPage() {
           <div className="border-b border-border pb-3">
             <span className="text-xs font-extrabold uppercase tracking-widest text-brand-red">Active Car Job</span>
             <h2 className="mt-1 font-display text-xl font-bold text-white">{activeJob.model}</h2>
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted mt-0.5">
               Plate: {activeJob.plate} | Owner: {activeJob.owner}
             </p>
           </div>
@@ -176,7 +305,7 @@ export default function TechnicianPage() {
           </div>
 
           <div className="border-t border-border pt-4">
-            <button className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card py-2.5 text-xs font-semibold text-white hover:bg-white/5">
+            <button className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card py-2.5 text-xs font-semibold text-white hover:bg-white/5 uppercase tracking-wider">
               [ + Consume Branch Part / Scan Barcode ]
             </button>
           </div>

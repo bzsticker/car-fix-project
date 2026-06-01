@@ -8,10 +8,13 @@ import {
   Calendar,
   Car,
   Clock,
+  CreditCard,
+  FileText,
   Home,
   LogOut,
   Menu,
   Package,
+  Settings,
   Shield,
   User,
   Users,
@@ -42,7 +45,11 @@ export default function Sidebar({ role, userName }: SidebarProps) {
   const ownerNav = [
     { name: "Overview", href: "/owner", icon: Home },
     { name: "Branches", href: "/owner/branches", icon: Shield },
-    { name: "Roster Logs", href: "/owner/roster", icon: Users },
+    { name: "Customers", href: "/owner/customers", icon: Users },
+    { name: "Vehicles", href: "/owner/vehicles", icon: Car },
+    { name: "Active Jobs", href: "/owner/jobs", icon: Wrench },
+    { name: "Invoices", href: "/owner/invoices", icon: FileText },
+    { name: "Roster Logs", href: "/owner/roster", icon: Clock },
     { name: "Global Stock", href: "/owner/stock", icon: Package },
     { name: "Reports", href: "/owner/reports", icon: BarChart3 },
   ];
@@ -54,6 +61,8 @@ export default function Sidebar({ role, userName }: SidebarProps) {
     { name: "Customers", href: "/branch/customers", icon: Users },
     { name: "Vehicles", href: "/branch/vehicles", icon: Car },
     { name: "Attendance", href: "/branch/attendance", icon: Clock },
+    { name: "POS Cashier", href: "/branch/pos", icon: CreditCard },
+    { name: "Settings", href: "/branch/settings", icon: Settings },
   ];
 
   const techNav = [{ name: "Active Tasks", href: "/tech", icon: Wrench }];
